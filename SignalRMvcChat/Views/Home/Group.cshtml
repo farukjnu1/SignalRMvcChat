@@ -1,0 +1,188 @@
+﻿
+@{
+    ViewBag.Title = "Group";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div id="list">
+    <h2>List of Group</h2>
+    <a href="#" onclick="switchView('form');">Add New Group</a>
+    <table border="1">
+        <tr>
+            <th>Group</th>
+            <th>Members</th>
+            <th>#</th>
+            <th>#</th>
+        </tr>
+        <tbody id="tbody"></tbody>
+    </table>
+</div>
+<div id="form">
+    <h2>Create Group</h2>
+    <a href="#" onclick="switchView('list');">Go To List</a>
+    <br />
+    <span>Group Name</span>
+    <input type="text" id="txtGroup" />
+    <button type="button" onclick="createGroup();">Save</button>
+    <table border="1">
+        <tr>
+            <th>#</th>
+            <th>Member</th>
+        </tr>
+        <tbody id="users"></tbody>
+    </table>
+</div>
+<input type="hidden" id="listGroup" />
+<input type="hidden" id="listUser" />
+<script src="~/Scripts/jquery-3.3.1.min.js"></script>
+<script>
+
+    function switchView(view) {
+        $('#tbody').text('');
+        $('#users').text('');
+        if (view === 'list') {
+            document.getElementById('list').hidden = false;
+            document.getElementById('form').hidden = true;
+            $('#txtGroup').val('');
+            getGroupWithUsers();
+        } else {
+            document.getElementById('list').hidden = true;
+            document.getElementById('form').hidden = false;
+            getUsers();
+        }
+    }
+
+    switchView('list');
+
+    function getGroupWithUsers() {
+        var http = new XMLHttpRequest();
+        var url = '/Home/GetGroup';
+        var params = '';
+        http.open('POST', url, true);
+        //Send the proper header information along with the request
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        http.onreadystatechange = function () {
+            //Call a function when the state changes.
+            if (http.readyState == 4 && http.status == 200) {
+                var res = JSON.parse(http.responseText);
+                var listGroup = res.data;
+                $('#listGroup').val(JSON.stringify(listGroup));
+                for (var i = 0; i < listGroup.length; i++) {
+                    var users = '';
+                    for (var j = 0; j < listGroup[i].listUserGroup.length; j++) {
+                        users += j === 0 ? listGroup[i].listUserGroup[j].Username : ', ' + listGroup[i].listUserGroup[j].Username;
+                    }
+                    var tr = '<tr>'
+                        + '<td>' + listGroup[i].UserGroupName + '</td>'
+                        + '<td>' + users + '</td>'
+                        + '<td><a href="#" onclick="chooseGroup(' + listGroup[i].ID + ')">Edit</a></td>'
+                        + '<td><a href="#" onclick="removeGroup(' + listGroup[i].ID + ')">Remove</a></td>'
+                        +'</tr>';
+                    $('#tbody').append(tr);
+                }
+            }
+        }
+        http.send(params);
+    }
+
+    function chooseGroup(ID) {
+        var jsonStr = $('#listGroup').val();
+        var listGroup = JSON.parse(jsonStr);
+        for (var i = 0; i < listGroup.length; i++) {
+            if (listGroup[i].ID === ID) {
+                $('#txtGroup').val(listGroup[i].UserGroupName);
+                switchView('form');
+            }
+        }
+    }
+
+    function removeGroup(ID) {
+        var isConfirm = confirm('Are you sure to remove?');
+        if (isConfirm === true) {
+            var jsonStr = $('#listGroup').val();
+            var listGroup = JSON.parse(jsonStr);
+            for (var i = 0; i < listGroup.length; i++) {
+                if (listGroup[i].ID === ID) {
+                    $('#txtGroup').val(listGroup[i].UserGroupName);
+                    deleteGroup();
+                }
+            }
+        }
+    }
+
+    function getUsers() {
+        var http = new XMLHttpRequest();
+        var url = '/Home/GetUser';
+        var params = 'groupName=' + $('#txtGroup').val();
+        http.open('POST', url, true);
+        //Send the proper header information along with the request
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        http.onreadystatechange = function () {
+            //Call a function when the state changes.
+            if (http.readyState == 4 && http.status == 200) {
+                var res = JSON.parse(http.responseText);
+                var listUser = res.data;
+                $('#listUser').val(JSON.stringify(listUser));
+                for (var i = 0; i < listUser.length; i++) {
+                    var tr = '<tr><td><input type="checkbox" name="chkUser" value="' + listUser[i].Username + '" ' + listUser[i].Checkbox + ' /></td>'
+                        + '<td>' + listUser[i].Username + '</td></tr>';
+                    $('#users').append(tr);
+                }
+            }
+        }
+        http.send(params);
+    }
+
+    function createGroup() {
+        var listUser = [];
+        var listChkUser = document.getElementsByName('chkUser');
+        for (var i = 0; i < listChkUser.length; i++) {
+            if (listChkUser[i].checked === true) {
+                listUser.push(listChkUser[i].value);
+            }
+        }
+        if (listUser.length === 0) {
+            alert('Please, choose members to create group.');
+        } else {
+            var http = new XMLHttpRequest();
+            var url = '/Home/CreateGroup';
+            var params = 'groupName=' + $('#txtGroup').val() + '&csvUser=' + listUser;
+            http.open('POST', url, true);
+            //Send the proper header information along with the request
+            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+            http.onreadystatechange = function () {
+                //Call a function when the state changes.
+                if (http.readyState == 4 && http.status == 200) {
+                    var res = JSON.parse(http.responseText);
+                    var isSave = res.data;
+                    if (isSave === true) {
+                        switchView('list');
+                    }
+                }
+            }
+            http.send(params);
+        }
+    }
+
+    function deleteGroup() {
+        var http = new XMLHttpRequest();
+        var url = '/Home/RemoveGroup';
+        var params = 'groupName=' + $('#txtGroup').val();
+        http.open('POST', url, true);
+        //Send the proper header information along with the request
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        http.onreadystatechange = function () {
+            //Call a function when the state changes.
+            if (http.readyState == 4 && http.status == 200) {
+                var res = JSON.parse(http.responseText);
+                var isSave = res.data;
+                if (isSave === true) {
+                    switchView('list');
+                }
+            }
+        }
+        http.send(params);
+    }
+</script>
+

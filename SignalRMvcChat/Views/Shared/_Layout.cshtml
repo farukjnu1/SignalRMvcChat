@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+</head>
+<body style="padding:2%">
+    <a href="/Home/Index">HOME</a>
+    | <a href="/Home/Chat" id="login">LOGIN</a>
+    | <a href="/Home/Chat" id="login">CHAT</a>
+    | <a href="/Home/Group" id="login">GROUP</a>
+    | <a href="#" id="logout" onclick="logout();">LOGOUT</a>
+    | <i id="loggedUser" style="color:green"></i>
+    <div>
+        @RenderBody()
+    </div>
+    @RenderSection("scripts", required: false)
+
+    <script>
+        function checkAuth() {
+            var isLogin = localStorage.getItem('isLogin');
+            if (isLogin === undefined || isLogin === null || isLogin === '') {
+                document.getElementById('login').hidden = false;
+                document.getElementById('logout').hidden = true;
+            } else {
+                document.getElementById('login').hidden = true;
+                document.getElementById('logout').hidden = false;
+                document.getElementById('loggedUser').innerText = isLogin;
+            }
+        }
+
+        checkAuth();
+
+        function logout() {
+            document.getElementById('login').hidden = false;
+            document.getElementById('logout').hidden = true;
+            localStorage.removeItem('isLogin');
+            window.location = '/Home/Index';
+        }
+    </script>
+</body>
+</html>
